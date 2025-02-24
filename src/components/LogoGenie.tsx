@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Building2, Brush, Download, Image, Mic, Palette, Search, Settings, ShoppingBag, Laptop } from 'lucide-react';
 import { Card } from "@/components/ui/card";
@@ -24,25 +23,17 @@ export const LogoGenie = () => {
   const { generateLogo, isGenerating, error, suggestions } = useLogoGeneration();
 
   const handleGenerateLogo = async () => {
-    try {
-      const { data, error } = await supabase.functions.invoke('generate-logo', {
-        body: {
-          industry: selectedIndustry,
-          description: brandDescription,
-          companyName: companyName,
-          slogan: slogan
-        }
-      });
-
-      if (error) {
-        console.error('Error generating logo:', error);
-        return;
-      }
-
-      console.log('Generated suggestions:', data);
-    } catch (err) {
-      console.error('Error:', err);
+    if (!selectedIndustry || !brandDescription || !companyName) {
+      console.error('Please fill in all required fields');
+      return;
     }
+
+    await generateLogo({
+      industry: selectedIndustry,
+      description: brandDescription,
+      companyName,
+      slogan
+    });
   };
 
   return (

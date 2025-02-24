@@ -1,10 +1,11 @@
 
 import { useState } from 'react';
+import { supabase } from "@/integrations/supabase/client";
 
 export const useLogoGeneration = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [suggestions, setSuggestions] = useState(null);
+  const [suggestions, setSuggestions] = useState<any>(null);
 
   const generateLogo = async (data: {
     industry: string;
@@ -16,20 +17,20 @@ export const useLogoGeneration = () => {
     setError(null);
 
     try {
-      const response = await fetch('/api/generate-logo', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+      const { data: response, error: fetchError } = await supabase.functions.invoke('generate-logo', {
+        body: data
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to generate logo suggestions');
+      if (fetchError) {
+        throw new Error(fetchError.message);
       }
 
-      const result = await response.json();
-      setSuggestions(result.suggestions);
+      setSuggestions(response.suggestions);
+      return response;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred while generating the logo';
+      setError(errorMessage);
+      console.error('Error:', err);
     } finally {
       setIsGenerating(false);
     }
