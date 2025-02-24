@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import { useLogoGeneration } from "@/hooks/useLogoGeneration";
+import { supabase } from "@/integrations/supabase/client";
 
 const industries = [
   { id: 'tech', name: 'Technology', icon: Laptop },
@@ -19,6 +21,29 @@ export const LogoGenie = () => {
   const [brandDescription, setBrandDescription] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [slogan, setSlogan] = useState('');
+  const { generateLogo, isGenerating, error, suggestions } = useLogoGeneration();
+
+  const handleGenerateLogo = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-logo', {
+        body: {
+          industry: selectedIndustry,
+          description: brandDescription,
+          companyName: companyName,
+          slogan: slogan
+        }
+      });
+
+      if (error) {
+        console.error('Error generating logo:', error);
+        return;
+      }
+
+      console.log('Generated suggestions:', data);
+    } catch (err) {
+      console.error('Error:', err);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 p-6">
@@ -113,11 +138,28 @@ export const LogoGenie = () => {
               </Button>
             )}
             {step === 3 && (
-              <Button className="ml-auto">
-                Generate Logo
+              <Button 
+                className="ml-auto" 
+                onClick={handleGenerateLogo}
+                disabled={isGenerating}
+              >
+                {isGenerating ? 'Generating...' : 'Generate Logo'}
               </Button>
             )}
           </div>
+
+          {error && (
+            <p className="text-red-500 mt-4">Error: {error}</p>
+          )}
+
+          {suggestions && (
+            <div className="mt-8">
+              <h3 className="text-xl font-semibold mb-4">AI Suggestions</h3>
+              <pre className="bg-gray-100 p-4 rounded-lg overflow-auto">
+                {JSON.stringify(suggestions, null, 2)}
+              </pre>
+            </div>
+          )}
         </div>
       </div>
     </div>
