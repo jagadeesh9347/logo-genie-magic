@@ -18,8 +18,8 @@ serve(async (req) => {
   try {
     const { industry, description, companyName, slogan } = await req.json()
 
-    // Construct a detailed prompt for the logo design
-    const prompt = `Create a detailed logo design suggestion for:
+    // First, get the design suggestions from GPT
+    const designPrompt = `Create a detailed logo design suggestion for:
       Company Name: ${companyName}
       Industry: ${industry}
       Description: ${description}
@@ -34,7 +34,7 @@ serve(async (req) => {
       
       Format the response in a clear, structured way.`
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const gptResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${openAIApiKey}`,
@@ -49,17 +49,46 @@ serve(async (req) => {
           },
           {
             role: 'user',
-            content: prompt
+            content: designPrompt
           }
         ],
       }),
     })
 
-    const data = await response.json()
-    const suggestions = data.choices[0].message.content
+    const gptData = await gptResponse.json()
+    const suggestions = gptData.choices[0].message.content
+
+    // Then, generate an image based on the suggestions
+    const imagePrompt = `Create a professional logo for "${companyName}" with these specifications:
+      ${suggestions.split('### 3. Logo Symbol/Icon Description')[1].split('### 4.')[0]}
+      Style: Modern, professional, clean design suitable for a business logo.
+      Format: Central composition with clear negative space around it.
+      Important: Make it look like a professional business logo, not an illustration.`
+
+    const imageResponse = await fetch('https://api.openai.com/v1/images/generations', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: "dall-e-3",
+        prompt: imagePrompt,
+        n: 1,
+        size: "1024x1024",
+        quality: "hd",
+        style: "natural"
+      }),
+    })
+
+    const imageData = await imageResponse.json()
+    const imageUrl = imageData.data?.[0]?.url
 
     return new Response(
-      JSON.stringify({ suggestions }),
+      JSON.stringify({ 
+        suggestions,
+        imageUrl 
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {

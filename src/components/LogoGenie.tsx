@@ -20,7 +20,7 @@ export const LogoGenie = () => {
   const [brandDescription, setBrandDescription] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [slogan, setSlogan] = useState('');
-  const { generateLogo, isGenerating, error, suggestions } = useLogoGeneration();
+  const { generateLogo, isGenerating, error, suggestions, imageUrl } = useLogoGeneration();
 
   const handleGenerateLogo = async () => {
     if (!selectedIndustry || !brandDescription || !companyName) {
@@ -143,12 +143,39 @@ export const LogoGenie = () => {
             <p className="text-red-500 mt-4">Error: {error}</p>
           )}
 
-          {suggestions && (
-            <div className="mt-8">
-              <h3 className="text-xl font-semibold mb-4">AI Suggestions</h3>
-              <pre className="bg-gray-100 p-4 rounded-lg overflow-auto">
-                {JSON.stringify(suggestions, null, 2)}
-              </pre>
+          {(suggestions || imageUrl) && (
+            <div className="mt-8 space-y-8">
+              {imageUrl && (
+                <div className="text-center">
+                  <h3 className="text-xl font-semibold mb-4">Generated Logo</h3>
+                  <div className="relative w-full max-w-md mx-auto aspect-square rounded-lg overflow-hidden">
+                    <img 
+                      src={imageUrl} 
+                      alt="Generated logo"
+                      className="object-contain w-full h-full"
+                    />
+                  </div>
+                  <Button className="mt-4" asChild>
+                    <a href={imageUrl} download="logo.png" target="_blank" rel="noopener noreferrer">
+                      <Download className="w-4 h-4 mr-2" />
+                      Download Logo
+                    </a>
+                  </Button>
+                </div>
+              )}
+              
+              {suggestions && (
+                <div>
+                  <h3 className="text-xl font-semibold mb-4">Design Suggestions</h3>
+                  <Card className="prose prose-sm max-w-none p-6">
+                    <div 
+                      dangerouslySetInnerHTML={{ 
+                        __html: suggestions.replace(/\n/g, '<br />') 
+                      }} 
+                    />
+                  </Card>
+                </div>
+              )}
             </div>
           )}
         </div>
