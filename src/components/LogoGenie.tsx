@@ -1,26 +1,47 @@
 import { useState } from 'react';
-import { Building2, Brush, Download, Image, Mic, Palette, Search, Settings, ShoppingBag, Laptop } from 'lucide-react';
+import { Building2, Brush, Download, Image, Mic, Palette, Search, Settings, ShoppingBag, Laptop, Utensils, Camera, Car, Hospital, Gamepad, Book, Music, Plane, Home, Heart, Dumbbell, Coffee, Film, Globe, Tree } from 'lucide-react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { useLogoGeneration } from "@/hooks/useLogoGeneration";
-import { supabase } from "@/integrations/supabase/client";
 
 const industries = [
   { id: 'tech', name: 'Technology', icon: Laptop },
   { id: 'retail', name: 'Retail', icon: ShoppingBag },
   { id: 'business', name: 'Business', icon: Building2 },
+  { id: 'restaurant', name: 'Restaurant', icon: Utensils },
+  { id: 'photography', name: 'Photography', icon: Camera },
+  { id: 'automotive', name: 'Automotive', icon: Car },
+  { id: 'healthcare', name: 'Healthcare', icon: Hospital },
+  { id: 'gaming', name: 'Gaming', icon: Gamepad },
+  { id: 'education', name: 'Education', icon: Book },
+  { id: 'music', name: 'Music', icon: Music },
+  { id: 'travel', name: 'Travel', icon: Plane },
+  { id: 'realestate', name: 'Real Estate', icon: Home },
+  { id: 'fitness', name: 'Fitness', icon: Dumbbell },
+  { id: 'beauty', name: 'Beauty', icon: Heart },
+  { id: 'cafe', name: 'Cafe', icon: Coffee },
+  { id: 'entertainment', name: 'Entertainment', icon: Film },
+  { id: 'environmental', name: 'Environmental', icon: Tree },
+  { id: 'international', name: 'International', icon: Globe },
+  { id: 'art', name: 'Art & Design', icon: Brush },
+  { id: 'fashion', name: 'Fashion', icon: ShoppingBag },
 ];
 
 export const LogoGenie = () => {
   const [step, setStep] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedIndustry, setSelectedIndustry] = useState('');
   const [brandDescription, setBrandDescription] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [slogan, setSlogan] = useState('');
   const { generateLogo, isGenerating, error, suggestions, imageUrl } = useLogoGeneration();
+
+  const filteredIndustries = industries.filter(industry =>
+    industry.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const handleGenerateLogo = async () => {
     if (!selectedIndustry || !brandDescription || !companyName) {
@@ -48,22 +69,36 @@ export const LogoGenie = () => {
           {step === 1 && (
             <section className="animate-fadeIn">
               <h2 className="text-2xl font-semibold text-gray-800 mb-6">Select Your Industry</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {industries.map((industry) => (
-                  <Card
-                    key={industry.id}
-                    className={`p-6 cursor-pointer transition-all glass-panel hover:scale-105 ${
-                      selectedIndustry === industry.id ? 'ring-2 ring-primary' : ''
-                    }`}
-                    onClick={() => setSelectedIndustry(industry.id)}
-                  >
-                    <div className="flex flex-col items-center text-center space-y-3">
-                      <industry.icon className="w-8 h-8 text-primary" />
-                      <h3 className="font-medium text-gray-900">{industry.name}</h3>
-                    </div>
-                  </Card>
-                ))}
+              <div className="mb-6">
+                <div className="relative">
+                  <Input
+                    type="text"
+                    placeholder="Search industries..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
+                  <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                </div>
               </div>
+              <ScrollArea className="h-[60vh]">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {filteredIndustries.map((industry) => (
+                    <Card
+                      key={industry.id}
+                      className={`p-6 cursor-pointer transition-all hover:scale-105 ${
+                        selectedIndustry === industry.id ? 'ring-2 ring-primary' : ''
+                      }`}
+                      onClick={() => setSelectedIndustry(industry.id)}
+                    >
+                      <div className="flex flex-col items-center text-center space-y-3">
+                        <industry.icon className="w-8 h-8 text-primary" />
+                        <h3 className="font-medium text-gray-900">{industry.name}</h3>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </ScrollArea>
             </section>
           )}
 

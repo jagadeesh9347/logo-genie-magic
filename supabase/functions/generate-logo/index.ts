@@ -58,12 +58,22 @@ serve(async (req) => {
     const gptData = await gptResponse.json()
     const suggestions = gptData.choices[0].message.content
 
-    // Then, generate an image based on the suggestions
-    const imagePrompt = `Create a professional logo for "${companyName}" with these specifications:
+    // Generate a more specific image prompt that includes the company name and slogan
+    const imagePrompt = `Create a professional business logo that includes:
+      1. The company name "${companyName}" prominently displayed
+      ${slogan ? `2. The slogan "${slogan}" integrated below the company name` : ''}
+      3. Visual elements:
       ${suggestions.split('### 3. Logo Symbol/Icon Description')[1].split('### 4.')[0]}
-      Style: Modern, professional, clean design suitable for a business logo.
-      Format: Central composition with clear negative space around it.
-      Important: Make it look like a professional business logo, not an illustration.`
+      
+      Style requirements:
+      - Modern, professional, clean design
+      - Company name must be clearly readable
+      - Balanced composition with clear negative space
+      - Suitable for business use across all media
+      - The logo should work well at different sizes
+      - Must look like a professional business logo, not an illustration
+      
+      Important: Ensure the text is clear and readable. The company name should be the most prominent text element.`
 
     const imageResponse = await fetch('https://api.openai.com/v1/images/generations', {
       method: 'POST',
