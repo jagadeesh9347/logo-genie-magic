@@ -6,42 +6,32 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
 const Auth = () => {
   const [email, setEmail] = useState("");
-  const [otp, setOtp] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [otpSent, setOtpSent] = useState(false);
+  const [isLogin, setIsLogin] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleEmailOTP = async (e: React.FormEvent) => {
+  const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      if (!otpSent) {
-        const { error } = await supabase.auth.signInWithOtp({
-          email,
-        });
-        
-        if (error) throw error;
-        
-        setOtpSent(true);
+      const { error } = isLogin
+        ? await supabase.auth.signInWithPassword({ email, password })
+        : await supabase.auth.signUp({ email, password });
+
+      if (error) throw error;
+
+      if (!isLogin) {
         toast({
-          title: "OTP Sent",
-          description: "Please check your email for the verification code.",
+          title: "Success!",
+          description: "Please check your email to verify your account.",
         });
       } else {
-        const { error } = await supabase.auth.verifyOtp({
-          email,
-          token: otp,
-          type: 'email'
-        });
-
-        if (error) throw error;
-
         navigate("/dashboard");
       }
     } catch (error: any) {
@@ -61,63 +51,50 @@ const Auth = () => {
         <div className="text-center mb-8">
           <h1 className="text-2xl md:text-3xl font-bold text-primary mb-2">Logo Genie</h1>
           <h2 className="text-xl md:text-2xl font-semibold text-gray-800">
-            Sign in with Magic Link
+            {isLogin ? "Welcome Back" : "Create Account"}
           </h2>
-          <p className="text-gray-600 mt-2">
-            No password needed - we'll send you a login code
-          </p>
         </div>
 
-        <form onSubmit={handleEmailOTP} className="space-y-6">
-          {!otpSent ? (
-            <div>
-              <Input
-                type="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="h-12 text-lg"
-              />
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <p className="text-sm text-gray-600 text-center">
-                Enter the code sent to {email}
-              </p>
-              <InputOTP
-                value={otp}
-                onChange={(value) => setOtp(value)}
-                maxLength={6}
-                className="gap-2"
-              >
-                <InputOTPGroup>
-                  {Array.from({ length: 6 }).map((_, index) => (
-                    <InputOTPSlot key={index} index={index} />
-                  ))}
-                </InputOTPGroup>
-              </InputOTP>
-            </div>
-          )}
+        <form onSubmit={handleAuth} className="space-y-4">
+          <div>
+            <Input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="h-12 text-lg"
+            />
+          </div>
+          <div>
+            <Input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="h-12 text-lg"
+            />
+          </div>
           
           <Button 
             type="submit" 
             className="w-full h-12 text-lg font-medium" 
             disabled={loading}
           >
-            {loading ? "Loading..." : otpSent ? "Verify Code" : "Send Magic Link"}
+            {loading ? "Loading..." : isLogin ? "Sign In" : "Sign Up"}
           </Button>
           
-          {otpSent && (
-            <Button
+          <p className="text-center mt-4 text-gray-600">
+            {isLogin ? "Don't have an account?" : "Already have an account?"}
+            <button
               type="button"
-              variant="outline"
-              className="w-full"
-              onClick={() => setOtpSent(false)}
+              onClick={() => setIsLogin(!isLogin)}
+              className="text-primary ml-2 hover:underline font-medium"
             >
-              Change Email
-            </Button>
-          )}
+              {isLogin ? "Sign Up" : "Sign In"}
+            </button>
+          </p>
         </form>
       </Card>
     </div>
