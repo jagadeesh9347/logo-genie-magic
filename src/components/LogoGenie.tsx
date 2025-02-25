@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Building2, Brush, Download, Image, Mic, Palette, Search, Settings, ShoppingBag, Laptop, Utensils, Camera, Car, Hospital, Gamepad, Book, Music, Plane, Home, Heart, Dumbbell, Coffee, Film, Globe, Tree } from 'lucide-react';
+import { Building2, Brush, Download, Image, Mic, Palette, Search, Settings, ShoppingBag, Laptop, Utensils, Camera, Car, Hospital, Gamepad, Book, Music, Plane, Home, Heart, Dumbbell, Coffee, Film, Globe} from 'lucide-react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
