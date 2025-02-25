@@ -5,7 +5,6 @@ import {
   Heart, Dumbbell, Coffee, Film, Globe, TreePalm 
 } from 'lucide-react';
 
-
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
