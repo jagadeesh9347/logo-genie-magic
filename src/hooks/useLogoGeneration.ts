@@ -2,39 +2,28 @@
 import { useState } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 
-interface LogoGenerationData {
-  industry: string;
-  description: string;
-  companyName: string;
-  slogan: string;
-}
-
-interface LogoResponse {
-  suggestions: string;
-  imageUrl: string;
-}
-
 export const useLogoGeneration = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
 
-  const generateLogo = async (data: LogoGenerationData) => {
+  const generateLogo = async (data: {
+    industry: string;
+    description: string;
+    companyName: string;
+    slogan: string;
+  }) => {
     setIsGenerating(true);
     setError(null);
 
     try {
-      const { data: response, error: fetchError } = await supabase.functions.invoke<LogoResponse>('generate-logo', {
+      const { data: response, error: fetchError } = await supabase.functions.invoke('generate-logo', {
         body: data
       });
 
       if (fetchError) {
         throw new Error(fetchError.message);
-      }
-
-      if (!response || !response.imageUrl) {
-        throw new Error('Failed to generate logo. Please try again.');
       }
 
       setSuggestions(response.suggestions);

@@ -16,33 +16,64 @@ serve(async (req) => {
   }
 
   try {
-    if (!openAIApiKey) {
-      console.error('OpenAI API key not found');
-      throw new Error('OpenAI API key is not configured')
-    }
+    const { industry, description, companyName, slogan } = await req.json()
 
-    const requestData = await req.json()
-    console.log('Received request data:', requestData);
+    // First, get the design suggestions from GPT
+    const designPrompt = `Create a detailed logo design suggestion for:
+      Company Name: ${companyName}
+      Industry: ${industry}
+      Description: ${description}
+      Slogan: ${slogan}
 
-    const { industry, description, companyName, slogan } = requestData
+      Please provide:
+      1. Color palette recommendations (with hex codes)
+      2. Typography suggestions
+      3. Logo symbol/icon description
+      4. Overall logo composition
+      5. Design rationale explaining how it connects to the brand
+      
+      Format the response in a clear, structured way.`
 
-    if (!industry || !description || !companyName) {
-      console.error('Missing required fields:', { industry, description, companyName });
-      throw new Error('Missing required fields: industry, description, and company name are required')
-    }
+    const gptResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a professional logo designer with expertise in branding and visual identity. Provide detailed, actionable logo design suggestions.'
+          },
+          {
+            role: 'user',
+            content: designPrompt
+          }
+        ],
+      }),
+    })
 
-    const prompt = `Create a modern, minimalist logo for ${companyName}, a ${industry} company.
-    Brand description: ${description}
-    ${slogan ? `Include the slogan: ${slogan}` : ''}
+    const gptData = await gptResponse.json()
+    const suggestions = gptData.choices[0].message.content
 
-    Requirements:
-    - Clean, professional design
-    - Company name must be clearly readable
-    - Simple layout with good spacing
-    - Must work at small sizes
-    - Include company name as text`
-
-    console.log('Making request to OpenAI API...');
+    // Generate a more specific image prompt that includes the company name and slogan
+    const imagePrompt = `Create a professional business logo that includes:
+      1. The company name "${companyName}" prominently displayed
+      ${slogan ? `2. The slogan "${slogan}" integrated below the company name` : ''}
+      3. Visual elements:
+      ${suggestions.split('### 3. Logo Symbol/Icon Description')[1].split('### 4.')[0]}
+      
+      Style requirements:
+      - Modern, professional, clean design
+      - Company name must be clearly readable
+      - Balanced composition with clear negative space
+      - Suitable for business use across all media
+      - The logo should work well at different sizes
+      - Must look like a professional business logo, not an illustration
+      
+      Important: Ensure the text is clear and readable. The company name should be the most prominent text element.`
 
     const imageResponse = await fetch('https://api.openai.com/v1/images/generations', {
       method: 'POST',
@@ -52,57 +83,29 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: "dall-e-3",
-        prompt,
+        prompt: imagePrompt,
         n: 1,
-        size: "512x512",
-        quality: "standard"
+        size: "1024x1024",
+        quality: "hd",
+        style: "natural"
       }),
     })
 
-    console.log('OpenAI API response status:', imageResponse.status);
-
-    if (!imageResponse.ok) {
-      const errorData = await imageResponse.json();
-      console.error('OpenAI API Error:', errorData);
-      throw new Error(errorData.error?.message || 'Failed to generate image')
-    }
-
     const imageData = await imageResponse.json()
-    console.log('OpenAI API response:', JSON.stringify(imageData, null, 2));
+    const imageUrl = imageData.data?.[0]?.url
 
-    if (!imageData.data?.[0]?.url) {
-      console.error('No image URL in response:', imageData);
-      throw new Error('No image URL returned from OpenAI')
-    }
-
-    const response = {
-      imageUrl: imageData.data[0].url,
-      suggestions: ''
-    };
-
-    console.log('Sending successful response');
-    return new Response(
-      JSON.stringify(response),
-      { 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        } 
-      }
-    )
-  } catch (error) {
-    console.error('Error in generate-logo function:', error);
     return new Response(
       JSON.stringify({ 
-        error: error instanceof Error ? error.message : 'An unexpected error occurred' 
+        suggestions,
+        imageUrl 
       }),
-      { 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        }, 
-        status: 500 
-      }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+  } catch (error) {
+    console.error('Error in generate-logo function:', error)
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     )
   }
 })
