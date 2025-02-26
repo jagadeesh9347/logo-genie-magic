@@ -17,32 +17,32 @@ serve(async (req) => {
 
   try {
     if (!openAIApiKey) {
+      console.error('OpenAI API key not found');
       throw new Error('OpenAI API key is not configured')
     }
 
-    const { industry, description, companyName, slogan } = await req.json()
+    const requestData = await req.json()
+    console.log('Received request data:', requestData);
+
+    const { industry, description, companyName, slogan } = requestData
 
     if (!industry || !description || !companyName) {
-      throw new Error('Missing required fields')
+      console.error('Missing required fields:', { industry, description, companyName });
+      throw new Error('Missing required fields: industry, description, and company name are required')
     }
 
-    console.log('Generating logo for:', { industry, companyName, slogan })
-
-    // Simplified prompt to focus on logo generation
-    const imagePrompt = `Create a modern, professional business logo for a ${industry} company named "${companyName}"${slogan ? ` with the slogan "${slogan}"` : ''}.
-
-    The brand description is: ${description}
+    const prompt = `Create a modern, minimalist logo for ${companyName}, a ${industry} company.
+    Brand description: ${description}
+    ${slogan ? `Include the slogan: ${slogan}` : ''}
 
     Requirements:
-    - Modern, minimalist, and professional design
+    - Clean, professional design
     - Company name must be clearly readable
-    - Clean layout with good spacing
-    - Suitable for business use
-    - Simple design that works at small sizes
-    
-    The logo should be a high-quality, professional business logo that reflects the company's industry and values.`
+    - Simple layout with good spacing
+    - Must work at small sizes
+    - Include company name as text`
 
-    console.log('Sending request to generate logo...')
+    console.log('Making request to OpenAI API...');
 
     const imageResponse = await fetch('https://api.openai.com/v1/images/generations', {
       method: 'POST',
@@ -52,41 +52,57 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: "dall-e-3",
-        prompt: imagePrompt,
+        prompt,
         n: 1,
         size: "512x512",
-        quality: "standard",
-        style: "natural"
+        quality: "standard"
       }),
     })
+
+    console.log('OpenAI API response status:', imageResponse.status);
 
     if (!imageResponse.ok) {
       const errorData = await imageResponse.json();
       console.error('OpenAI API Error:', errorData);
-      throw new Error(errorData.error?.message || 'Failed to generate image');
+      throw new Error(errorData.error?.message || 'Failed to generate image')
     }
 
     const imageData = await imageResponse.json()
-    const imageUrl = imageData.data?.[0]?.url
+    console.log('OpenAI API response:', JSON.stringify(imageData, null, 2));
 
-    if (!imageUrl) {
+    if (!imageData.data?.[0]?.url) {
+      console.error('No image URL in response:', imageData);
       throw new Error('No image URL returned from OpenAI')
     }
 
-    console.log('Successfully generated logo')
+    const response = {
+      imageUrl: imageData.data[0].url,
+      suggestions: ''
+    };
 
+    console.log('Sending successful response');
     return new Response(
-      JSON.stringify({ 
-        imageUrl,
-        suggestions: '' // We're not using suggestions anymore
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify(response),
+      { 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json' 
+        } 
+      }
     )
   } catch (error) {
-    console.error('Error in generate-logo function:', error)
+    console.error('Error in generate-logo function:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      JSON.stringify({ 
+        error: error instanceof Error ? error.message : 'An unexpected error occurred' 
+      }),
+      { 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json' 
+        }, 
+        status: 500 
+      }
     )
   }
 })
