@@ -28,68 +28,21 @@ serve(async (req) => {
 
     console.log('Generating logo for:', { industry, companyName, slogan })
 
-    const designPrompt = `Create a detailed logo design suggestion for:
-      Company Name: ${companyName}
-      Industry: ${industry}
-      Description: ${description}
-      Slogan: ${slogan}
+    // Simplified prompt to focus on logo generation
+    const imagePrompt = `Create a modern, professional business logo for a ${industry} company named "${companyName}"${slogan ? ` with the slogan "${slogan}"` : ''}.
 
-      Please provide:
-      1. Color palette recommendations (with hex codes)
-      2. Typography suggestions
-      3. Logo symbol/icon description
-      4. Overall logo composition
-      5. Design rationale explaining how it connects to the brand
-      
-      Format the response in a clear, structured way.`
+    The brand description is: ${description}
 
-    console.log('Sending request to GPT for design suggestions...')
+    Requirements:
+    - Modern, minimalist, and professional design
+    - Company name must be clearly readable
+    - Clean layout with good spacing
+    - Suitable for business use
+    - Simple design that works at small sizes
+    
+    The logo should be a high-quality, professional business logo that reflects the company's industry and values.`
 
-    const gptResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a professional logo designer with expertise in branding and visual identity. Provide detailed, actionable logo design suggestions.'
-          },
-          {
-            role: 'user',
-            content: designPrompt
-          }
-        ],
-      }),
-    })
-
-    if (!gptResponse.ok) {
-      throw new Error('Failed to get design suggestions from OpenAI')
-    }
-
-    const gptData = await gptResponse.json()
-    const suggestions = gptData.choices[0].message.content
-
-    console.log('Got design suggestions, generating image...')
-
-    const imagePrompt = `Create a professional business logo that includes:
-      1. The company name "${companyName}" prominently displayed
-      ${slogan ? `2. The slogan "${slogan}" integrated below the company name` : ''}
-      3. Visual elements:
-      ${suggestions.split('### 3. Logo Symbol/Icon Description')[1]?.split('### 4.')[0] || 'Simple and professional design'}
-      
-      Style requirements:
-      - Modern, professional, clean design
-      - Company name must be clearly readable
-      - Balanced composition with clear negative space
-      - Suitable for business use across all media
-      - Must look like a professional business logo, not an illustration
-      - Simple and clear design that works well at small sizes
-      
-      Important: Ensure the text is clear and readable. The company name should be the most prominent text element.`
+    console.log('Sending request to generate logo...')
 
     const imageResponse = await fetch('https://api.openai.com/v1/images/generations', {
       method: 'POST',
@@ -108,7 +61,9 @@ serve(async (req) => {
     })
 
     if (!imageResponse.ok) {
-      throw new Error('Failed to generate image')
+      const errorData = await imageResponse.json();
+      console.error('OpenAI API Error:', errorData);
+      throw new Error(errorData.error?.message || 'Failed to generate image');
     }
 
     const imageData = await imageResponse.json()
@@ -122,8 +77,8 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({ 
-        suggestions,
-        imageUrl 
+        imageUrl,
+        suggestions: '' // We're not using suggestions anymore
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
