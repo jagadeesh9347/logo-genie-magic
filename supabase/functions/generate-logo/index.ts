@@ -70,8 +70,8 @@ serve(async (req) => {
       - Company name must be clearly readable
       - Balanced composition with clear negative space
       - Suitable for business use across all media
-      - The logo should work well at different sizes
       - Must look like a professional business logo, not an illustration
+      - Simple and clear design that works well at small sizes
       
       Important: Ensure the text is clear and readable. The company name should be the most prominent text element.`
 
@@ -85,8 +85,8 @@ serve(async (req) => {
         model: "dall-e-3",
         prompt: imagePrompt,
         n: 1,
-        size: "1024x1024",
-        quality: "hd",
+        size: "512x512", // Changed from 1024x1024 to 512x512 for lower cost
+        quality: "standard", // Changed from "hd" to "standard" for lower cost
         style: "natural"
       }),
     })
