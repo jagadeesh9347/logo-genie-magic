@@ -16,9 +16,18 @@ serve(async (req) => {
   }
 
   try {
+    if (!openAIApiKey) {
+      throw new Error('OpenAI API key is not configured')
+    }
+
     const { industry, description, companyName, slogan } = await req.json()
 
-    // First, get the design suggestions from GPT
+    if (!industry || !description || !companyName) {
+      throw new Error('Missing required fields')
+    }
+
+    console.log('Generating logo for:', { industry, companyName, slogan })
+
     const designPrompt = `Create a detailed logo design suggestion for:
       Company Name: ${companyName}
       Industry: ${industry}
@@ -33,6 +42,8 @@ serve(async (req) => {
       5. Design rationale explaining how it connects to the brand
       
       Format the response in a clear, structured way.`
+
+    console.log('Sending request to GPT for design suggestions...')
 
     const gptResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -55,15 +66,20 @@ serve(async (req) => {
       }),
     })
 
+    if (!gptResponse.ok) {
+      throw new Error('Failed to get design suggestions from OpenAI')
+    }
+
     const gptData = await gptResponse.json()
     const suggestions = gptData.choices[0].message.content
 
-    // Generate a more specific image prompt that includes the company name and slogan
+    console.log('Got design suggestions, generating image...')
+
     const imagePrompt = `Create a professional business logo that includes:
       1. The company name "${companyName}" prominently displayed
       ${slogan ? `2. The slogan "${slogan}" integrated below the company name` : ''}
       3. Visual elements:
-      ${suggestions.split('### 3. Logo Symbol/Icon Description')[1].split('### 4.')[0]}
+      ${suggestions.split('### 3. Logo Symbol/Icon Description')[1]?.split('### 4.')[0] || 'Simple and professional design'}
       
       Style requirements:
       - Modern, professional, clean design
@@ -85,14 +101,24 @@ serve(async (req) => {
         model: "dall-e-3",
         prompt: imagePrompt,
         n: 1,
-        size: "512x512", // Changed from 1024x1024 to 512x512 for lower cost
-        quality: "standard", // Changed from "hd" to "standard" for lower cost
+        size: "512x512",
+        quality: "standard",
         style: "natural"
       }),
     })
 
+    if (!imageResponse.ok) {
+      throw new Error('Failed to generate image')
+    }
+
     const imageData = await imageResponse.json()
     const imageUrl = imageData.data?.[0]?.url
+
+    if (!imageUrl) {
+      throw new Error('No image URL returned from OpenAI')
+    }
+
+    console.log('Successfully generated logo')
 
     return new Response(
       JSON.stringify({ 
