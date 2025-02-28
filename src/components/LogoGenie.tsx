@@ -1,4 +1,5 @@
-import { useState } from 'react';
+
+import { useState, useRef, useEffect } from 'react';
 import { 
   Building2, Brush, Download, Image, Mic, Palette, Search, Settings, ShoppingBag, 
   Laptop, Utensils, Camera, Car, Hospital, Gamepad, Book, Music, Plane, Home, 
@@ -43,6 +44,7 @@ export const LogoGenie = () => {
   const [companyName, setCompanyName] = useState('');
   const [slogan, setSlogan] = useState('');
   const { generateLogo, isGenerating, error, suggestions, imageUrl } = useLogoGeneration();
+  const logoResultRef = useRef<HTMLDivElement>(null);
 
   const filteredIndustries = industries.filter(industry =>
     industry.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -62,8 +64,20 @@ export const LogoGenie = () => {
     });
   };
 
+  // Effect to scroll to logo result when logo is generated
+  useEffect(() => {
+    if (imageUrl && logoResultRef.current) {
+      setTimeout(() => {
+        logoResultRef.current?.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start'
+        });
+      }, 500); // Small delay to ensure DOM is updated
+    }
+  }, [imageUrl]);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 p-6 pb-24">
       <div className="max-w-4xl mx-auto">
         <header className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Logo Genie</h1>
@@ -184,18 +198,19 @@ export const LogoGenie = () => {
           )}
 
           {(suggestions || imageUrl) && (
-            <div className="mt-8 space-y-8">
+            <div ref={logoResultRef} className="mt-12 space-y-8 pt-4" id="logo-result">
+              <h2 className="text-3xl font-bold text-center mb-8">Generated Logo</h2>
+              
               {imageUrl && (
                 <div className="text-center">
-                  <h3 className="text-xl font-semibold mb-4">Generated Logo</h3>
-                  <div className="relative w-full max-w-md mx-auto aspect-square rounded-lg overflow-hidden">
+                  <div className="relative w-full max-w-md mx-auto aspect-square rounded-lg overflow-hidden bg-white shadow-lg p-4">
                     <img 
                       src={imageUrl} 
                       alt="Generated logo"
                       className="object-contain w-full h-full"
                     />
                   </div>
-                  <Button className="mt-4" asChild>
+                  <Button className="mt-6" asChild>
                     <a href={imageUrl} download="logo.png" target="_blank" rel="noopener noreferrer">
                       <Download className="w-4 h-4 mr-2" />
                       Download Logo
@@ -205,7 +220,7 @@ export const LogoGenie = () => {
               )}
               
               {suggestions && (
-                <div>
+                <div className="mt-8">
                   <h3 className="text-xl font-semibold mb-4">Design Suggestions</h3>
                   <Card className="prose prose-sm max-w-none p-6">
                     <div 
