@@ -43,7 +43,7 @@ export const LogoGenie = () => {
   const [brandDescription, setBrandDescription] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [slogan, setSlogan] = useState('');
-  const { generateLogo, isGenerating, error, suggestions, imageUrl } = useLogoGeneration();
+  const { generateLogo, isGenerating, error, imageUrl } = useLogoGeneration();
   const logoResultRef = useRef<HTMLDivElement>(null);
 
   const filteredIndustries = industries.filter(industry =>
@@ -197,40 +197,25 @@ export const LogoGenie = () => {
             <p className="text-red-500 mt-4">Error: {error}</p>
           )}
 
-          {(suggestions || imageUrl) && (
+          {imageUrl && (
             <div ref={logoResultRef} className="mt-12 space-y-8 pt-4" id="logo-result">
               <h2 className="text-3xl font-bold text-center mb-8">Generated Logo</h2>
               
-              {imageUrl && (
-                <div className="text-center">
-                  <div className="relative w-full max-w-md mx-auto aspect-square rounded-lg overflow-hidden bg-white shadow-lg p-4">
-                    <img 
-                      src={imageUrl} 
-                      alt="Generated logo"
-                      className="object-contain w-full h-full"
-                    />
-                  </div>
-                  <Button className="mt-6" asChild>
-                    <a href={imageUrl} download="logo.png" target="_blank" rel="noopener noreferrer">
-                      <Download className="w-4 h-4 mr-2" />
-                      Download Logo
-                    </a>
-                  </Button>
+              <div className="text-center">
+                <div className="relative w-full max-w-md mx-auto aspect-square rounded-lg overflow-hidden bg-white shadow-lg p-4">
+                  <img 
+                    src={imageUrl} 
+                    alt="Generated logo"
+                    className="object-contain w-full h-full"
+                  />
                 </div>
-              )}
-              
-              {suggestions && (
-                <div className="mt-8">
-                  <h3 className="text-xl font-semibold mb-4">Design Suggestions</h3>
-                  <Card className="prose prose-sm max-w-none p-6">
-                    <div 
-                      dangerouslySetInnerHTML={{ 
-                        __html: suggestions.replace(/\n/g, '<br />') 
-                      }} 
-                    />
-                  </Card>
-                </div>
-              )}
+                <Button className="mt-6" asChild>
+                  <a href={imageUrl} download="logo.png" target="_blank" rel="noopener noreferrer">
+                    <Download className="w-4 h-4 mr-2" />
+                    Download Logo
+                  </a>
+                </Button>
+              </div>
             </div>
           )}
         </div>

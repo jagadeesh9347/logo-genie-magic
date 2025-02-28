@@ -5,7 +5,6 @@ import { supabase } from "@/integrations/supabase/client";
 export const useLogoGeneration = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [suggestions, setSuggestions] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
 
   const generateLogo = async (data: {
@@ -26,7 +25,6 @@ export const useLogoGeneration = () => {
         throw new Error(fetchError.message);
       }
 
-      setSuggestions(response.suggestions);
       setImageUrl(response.imageUrl);
       return response;
     } catch (err) {
@@ -38,5 +36,5 @@ export const useLogoGeneration = () => {
     }
   };
 
-  return { generateLogo, isGenerating, error, suggestions, imageUrl };
+  return { generateLogo, isGenerating, error, imageUrl };
 };
