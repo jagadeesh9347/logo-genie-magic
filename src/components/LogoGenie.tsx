@@ -48,6 +48,58 @@ export const LogoGenie = () => {
   const [slogan, setSlogan] = useState('');
   const { generateLogo, isGenerating, error, imageUrl } = useLogoGeneration();
   const logoResultRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
+
+  const handleDownload = async () => {
+    if (!imageUrl) return;
+    try {
+      // Convert data URL or fetched URL to base64
+      let base64Data: string;
+      let ext = 'png';
+      if (imageUrl.startsWith('data:')) {
+        const match = imageUrl.match(/^data:(.+?);base64,(.*)$/);
+        if (!match) throw new Error('Invalid image data');
+        const mime = match[1];
+        ext = mime.includes('svg') ? 'svg' : mime.includes('jpeg') ? 'jpg' : 'png';
+        base64Data = match[2];
+      } else {
+        const res = await fetch(imageUrl);
+        const blob = await res.blob();
+        ext = blob.type.includes('svg') ? 'svg' : blob.type.includes('jpeg') ? 'jpg' : 'png';
+        base64Data = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      }
+
+      const fileName = `logo-${Date.now()}.${ext}`;
+
+      if (Capacitor.isNativePlatform()) {
+        await Filesystem.writeFile({
+          path: fileName,
+          data: base64Data,
+          directory: Directory.Documents,
+        });
+        toast({
+          title: 'Logo saved!',
+          description: `Saved to Documents as ${fileName}`,
+        });
+      } else {
+        const link = document.createElement('a');
+        link.href = imageUrl;
+        link.download = fileName;
+        link.click();
+      }
+    } catch (e: any) {
+      toast({
+        title: 'Download failed',
+        description: e?.message ?? 'Could not save logo',
+        variant: 'destructive',
+      });
+    }
+  };
 
   const filteredIndustries = industries.filter(industry =>
     industry.name.toLowerCase().includes(searchQuery.toLowerCase())
