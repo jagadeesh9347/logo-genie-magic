@@ -264,11 +264,9 @@ export const LogoGenie = () => {
                     className="object-contain w-full h-full"
                   />
                 </div>
-                <Button className="mt-6" asChild>
-                  <a href={imageUrl} download="logo.png" target="_blank" rel="noopener noreferrer">
-                    <Download className="w-4 h-4 mr-2" />
-                    Download Logo
-                  </a>
+                <Button className="mt-6" onClick={handleDownload}>
+                  <Download className="w-4 h-4 mr-2" />
+                  Download Logo
                 </Button>
               </div>
             </div>
