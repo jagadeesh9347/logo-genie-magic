@@ -10,6 +10,16 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+const parseJsonSafely = async (response: Response) => {
+  const rawText = await response.text()
+
+  try {
+    return rawText ? JSON.parse(rawText) : null
+  } catch {
+    return { rawText }
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -67,9 +77,9 @@ serve(async (req) => {
       }),
     })
 
-    const gptData = await gptResponse.json()
+    const gptData = await parseJsonSafely(gptResponse)
     if (!gptResponse.ok) {
-      throw new Error(gptData?.error?.message || gptData?.error || 'Failed to generate logo design direction')
+      throw new Error(gptData?.error?.message || gptData?.error || gptData?.rawText || 'Failed to generate logo design direction')
     }
 
     const suggestions = gptData?.choices?.[0]?.message?.content
@@ -99,31 +109,42 @@ serve(async (req) => {
       
       Important: Ensure the text is clear and readable. The company name should be the most prominent text element.`
 
-    const imageResponse = await fetch(`${aiGatewayBaseUrl}/images/generations`, {
+    const imageResponse = await fetch(`${aiGatewayBaseUrl}/responses`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${lovableApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-image",
-        prompt: imagePrompt,
-        n: 1,
-        size: "1024x1024",
-        quality: "high"
+        model: "openai/gpt-5",
+        input: imagePrompt,
+        tools: [
+          {
+            type: 'image_generation',
+            size: '1024x1024',
+            quality: 'high',
+            output_format: 'png',
+            background: 'opaque'
+          }
+        ]
       }),
     })
 
-    const imageData = await imageResponse.json()
+    const imageData = await parseJsonSafely(imageResponse)
     if (!imageResponse.ok) {
-      throw new Error(imageData?.error?.message || imageData?.error || 'Failed to generate logo image')
+      throw new Error(imageData?.error?.message || imageData?.error || imageData?.rawText || 'Failed to generate logo image')
     }
 
-    const imageUrl = imageData.data?.[0]?.url
+    const imageBase64 = imageData?.output
+      ?.filter?.((output: { type?: string; result?: string }) => output?.type === 'image_generation_call')
+      ?.map?.((output: { result?: string }) => output?.result)
+      ?.find?.((value: string | undefined) => Boolean(value))
 
-    if (!imageUrl) {
-      throw new Error('AI image response did not include an image URL')
+    if (!imageBase64) {
+      throw new Error('AI image response did not include image data')
     }
+
+    const imageUrl = `data:image/png;base64,${imageBase64}`
 
     return new Response(
       JSON.stringify({ 
