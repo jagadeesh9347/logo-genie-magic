@@ -20,6 +20,21 @@ const parseJsonSafely = async (response: Response) => {
   }
 }
 
+const extractSvgMarkup = (content: string) => {
+  const fencedMatch = content.match(/```(?:svg)?\s*([\s\S]*?<svg[\s\S]*?<\/svg>)\s*```/i)
+  const directMatch = content.match(/<svg[\s\S]*?<\/svg>/i)
+  return (fencedMatch?.[1] || directMatch?.[0] || '').trim()
+}
+
+const toBase64 = (value: string) => {
+  const bytes = new TextEncoder().encode(value)
+  let binary = ''
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte)
+  }
+  return btoa(binary)
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -90,41 +105,42 @@ serve(async (req) => {
 
     const cleanedDescription = description.trim()
     const visualDirection = suggestions.trim().replace(/\s+/g, ' ')
+    const svgPrompt = `Create a single self-contained SVG logo for this business.
 
-    // Generate a more specific image prompt that includes the company name and slogan
-    const imagePrompt = `Create a professional business logo that includes:
-      1. The company name "${companyName}" prominently displayed
-      ${slogan ? `2. The slogan "${slogan}" integrated below the company name` : ''}
-      3. Brand description: ${cleanedDescription}
-      4. Industry: ${industry}
-      5. Visual direction: ${visualDirection}
-      
-      Style requirements:
-      - Modern, professional, clean design
-      - Company name must be clearly readable
-      - Balanced composition with clear negative space
-      - Suitable for business use across all media
-      - The logo should work well at different sizes
-      - Must look like a professional business logo, not an illustration
-      
-      Important: Ensure the text is clear and readable. The company name should be the most prominent text element.`
+Company name: ${companyName}
+Industry: ${industry}
+Brand description: ${cleanedDescription}
+${slogan ? `Slogan: ${slogan}` : 'Slogan: none'}
+Visual direction: ${visualDirection}
 
-    const imageResponse = await fetch(`${aiGatewayBaseUrl}/responses`, {
+Requirements:
+- Return only SVG markup, no explanation
+- Start with <svg and end with </svg>
+- Use a square 1024 by 1024 viewBox
+- Keep the composition centered with a premium, modern, readable look
+- Include the company name as clear vector text inside the SVG
+- ${slogan ? 'Include the slogan in smaller readable text' : 'Do not add placeholder slogan text'}
+- Use 2 to 4 colors max
+- Avoid tiny details, raster effects, embedded images, scripts, external fonts, or unsupported filters
+- Make it suitable for restaurant branding and Android display
+- Prefer strong contrast and clean geometry`
+
+    const imageResponse = await fetch(`${aiGatewayBaseUrl}/chat/completions`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${lovableApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: "openai/gpt-5",
-        input: imagePrompt,
-        tools: [
+        model: 'google/gemini-2.5-flash',
+        messages: [
           {
-            type: 'image_generation',
-            size: '1024x1024',
-            quality: 'high',
-            output_format: 'png',
-            background: 'opaque'
+            role: 'system',
+            content: 'You are an expert brand designer who creates valid production-ready SVG logos. Return only SVG markup.'
+          },
+          {
+            role: 'user',
+            content: svgPrompt
           }
         ]
       }),
@@ -135,16 +151,14 @@ serve(async (req) => {
       throw new Error(imageData?.error?.message || imageData?.error || imageData?.rawText || 'Failed to generate logo image')
     }
 
-    const imageBase64 = imageData?.output
-      ?.filter?.((output: { type?: string; result?: string }) => output?.type === 'image_generation_call')
-      ?.map?.((output: { result?: string }) => output?.result)
-      ?.find?.((value: string | undefined) => Boolean(value))
+    const svgContent = imageData?.choices?.[0]?.message?.content
+    const svgMarkup = typeof svgContent === 'string' ? extractSvgMarkup(svgContent) : ''
 
-    if (!imageBase64) {
-      throw new Error('AI image response did not include image data')
+    if (!svgMarkup) {
+      throw new Error('AI response did not include valid SVG logo markup')
     }
 
-    const imageUrl = `data:image/png;base64,${imageBase64}`
+    const imageUrl = `data:image/svg+xml;base64,${toBase64(svgMarkup)}`
 
     return new Response(
       JSON.stringify({ 
