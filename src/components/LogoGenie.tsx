@@ -12,6 +12,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { useLogoGeneration } from "@/hooks/useLogoGeneration";
+import { Capacitor } from "@capacitor/core";
+import { Filesystem, Directory } from "@capacitor/filesystem";
+import { useToast } from "@/hooks/use-toast";
 
 const industries = [
   { id: 'tech', name: 'Technology', icon: Laptop },
